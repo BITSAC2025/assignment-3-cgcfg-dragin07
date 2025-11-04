@@ -2,11 +2,12 @@ name: AutoGrader
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   workflow_dispatch:
 
 env:
   SVF_DIR: ${{ github.workspace }}/SVF
+  LLVM_DIR: ${{ github.workspace }}/SVF/llvm-16.0.0.obj
   ASSIGNMENT_DIR: ${{ github.workspace }}
 
 jobs:
@@ -15,7 +16,7 @@ jobs:
     name: Compare with Reference Answer
 
     steps:
-      # Checkout student's code
+      # Checkout students' code
       - name: Checkout Student's Code
         uses: actions/checkout@v4
 
@@ -26,6 +27,10 @@ jobs:
           sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
           sudo apt-get update
           sudo apt-get install cmake gcc g++ nodejs doxygen graphviz lcov libncurses5-dev libtinfo6 libzstd-dev
+
+      # Set LLVM path
+      - name: Add LLVM to PATH
+        run: echo "${{ env.LLVM_DIR }}/bin" >> $GITHUB_PATH
 
       # Checkout and build SVF dependency
       - name: Checkout and Build SVF
@@ -41,7 +46,7 @@ jobs:
           chmod +x build.sh
           ./build.sh
 
-      # Compile student's code
+      # Compile students' code
       - name: Compile Student's Code
         run: |
           chmod +x build.sh
@@ -58,23 +63,22 @@ jobs:
       # Prepare test environment
       - name: Prepare Test Environment
         run: |
-          cp answer-repo/Assignment-2-IR/autogen.sh $ASSIGNMENT_DIR/Assignment-2-IR
-          cp answer-repo/Assignment-2-IR/normgraph.sh $ASSIGNMENT_DIR/Assignment-2-IR
-          cd $ASSIGNMENT_DIR/Assignment-2-IR
-          chmod +x autogen.sh normgraph.sh
+          cp answer-repo/Assignment-3-CGCFG/autogen.sh $ASSIGNMENT_DIR/Assignment-3-CGCFG
+          cd $ASSIGNMENT_DIR/Assignment-3-CGCFG
+          chmod +x autogen.sh
 
       # Run student's code and capture output
       - name: Run Student's Code
         run: |
-          cd $ASSIGNMENT_DIR/Assignment-2-IR
+          cd $ASSIGNMENT_DIR/Assignment-3-CGCFG
           ./autogen.sh
 
       # Compare answers
       - name: Compare Answers
         run: |
-          ANSWER_SOURCE_DIR="answer-repo/Assignment-2-IR/answers"
-          ANSWER_STUDENT_DIR="$ASSIGNMENT_DIR/Assignment-2-IR/answers"
-          RESULTS_DIR="$ASSIGNMENT_DIR/Assignment-2-IR/test-results"
+          ANSWER_SOURCE_DIR="answer-repo/Assignment-3-CGCFG/answers"
+          ANSWER_STUDENT_DIR="$ASSIGNMENT_DIR/Assignment-3-CGCFG/answers"
+          RESULTS_DIR="$ASSIGNMENT_DIR/Assignment-3-CGCFG/test-results"
           mkdir -p $RESULTS_DIR
           
           correct_count=0
@@ -96,7 +100,7 @@ jobs:
               filename=$(basename "$answer_file")
               student_file="$ANSWER_STUDENT_DIR/$filename"
               total_count=$((total_count + 1))
-            
+          
               if [ -f "$student_file" ]; then
                 if diff -b -q "$answer_file" "$student_file" > /dev/null; then
                   echo "CORRECT: $filename"
